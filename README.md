@@ -6,4 +6,4 @@ How to run:
 
 OR
 
-- Use python ``-m http.server 8000`` on this folder then open `index.html`
+- Use ``python -m http.server 8000`` on this folder then open `index.html`
