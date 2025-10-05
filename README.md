@@ -6,7 +6,8 @@ How to run:
 
 OR
 
-- Use ``python -m http.server 8000`` on this folder then open `index.html`
+1. Use ``python -m http.server 8000`` on this folder
+2. Open `http://localhost:8000/` on browser
 
 
 # Fungsi Tiap script
