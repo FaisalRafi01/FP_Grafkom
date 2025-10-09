@@ -80,19 +80,19 @@ export function createRoom() {
     // Texture
     const loaderTexture = new THREE.TextureLoader();
 
-    const groundTexture = loaderTexture.load('assets/texture/Stone-tile.jpg');
+    const groundTexture = loaderTexture.load('../public/assets/texture/Stone-tile.jpg');
     groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
     groundTexture.repeat.set(repeatX, repeatY);
 
     // Environment map
     const loaderEnv = new THREE.CubeTextureLoader();
     const cubeMap = loaderEnv.load([
-        './assets/skybox/Sky/Cubemap_Sky_bk.png',
-        './assets/skybox/Sky/Cubemap_Sky_ft.png',
-        './assets/skybox/Sky/Cubemap_Sky_up.png',
-        './assets/skybox/Sky/Cubemap_Sky_dn.png',
-        './assets/skybox/Sky/Cubemap_Sky_rt.png',
-        './assets/skybox/Sky/Cubemap_Sky_lf.png'
+        '../public/assets/skybox/Sky/Cubemap_Sky_bk.png',
+        '../public/assets/skybox/Sky/Cubemap_Sky_ft.png',
+        '../public/assets/skybox/Sky/Cubemap_Sky_up.png',
+        '../public/assets/skybox/Sky/Cubemap_Sky_dn.png',
+        '../public/assets/skybox/Sky/Cubemap_Sky_rt.png',
+        '../public/assets/skybox/Sky/Cubemap_Sky_lf.png'
     ]);
     scene.background = cubeMap;
 
