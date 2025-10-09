@@ -13,9 +13,8 @@ export function createRoom() {
     const groundDepth = 200;
     const groundColor = 0x228B22;
 
-    // Pencahayaan
-    const dirLightIntensity = 1;
-    const ambientLightIntensity = 0.4;
+    // Control Variables
+    const repeatX = 128, repeatY = 128;
 
     // Ukuran rumah (persegi panjang)
     const rumahPanjang = 6*scale;
@@ -58,21 +57,53 @@ export function createRoom() {
     scene.background = new THREE.Color(0xa0a0a0);
 
     // Directional light
-    const dir = new THREE.DirectionalLight(0xffffff, dirLightIntensity);
-    dir.position.set(10, 20, 10);
+    const dir = new THREE.DirectionalLight(0xffffff, 1);
+    dir.position.set(50, 50, 5);
+    dir.castShadow = true;
+    dir.shadow.mapSize.set(4096, 4096);
+    dir.shadow.camera.near = 0.5;
+    dir.shadow.camera.far = 100;
+    dir.shadow.camera.left = -50;
+    dir.shadow.camera.right = 50;
+    dir.shadow.camera.top = 50;
+    dir.shadow.camera.bottom = -50;
+
     scene.add(dir);
+    
+    const lightHelper = new THREE.DirectionalLightHelper(dir, 5);
+    scene.add(lightHelper);
 
     // Ambient light
-    const ambient = new THREE.AmbientLight(0xffffff, ambientLightIntensity);
+    const ambient = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambient);
 
+    // Texture
+    const loaderTexture = new THREE.TextureLoader();
+
+    const groundTexture = loaderTexture.load('assets/texture/Stone-tile.jpg');
+    groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
+    groundTexture.repeat.set(repeatX, repeatY);
+
+    // Environment map
+    const loaderEnv = new THREE.CubeTextureLoader();
+    const cubeMap = loaderEnv.load([
+        './assets/skybox/Sky/Cubemap_Sky_bk.png',
+        './assets/skybox/Sky/Cubemap_Sky_ft.png',
+        './assets/skybox/Sky/Cubemap_Sky_up.png',
+        './assets/skybox/Sky/Cubemap_Sky_dn.png',
+        './assets/skybox/Sky/Cubemap_Sky_rt.png',
+        './assets/skybox/Sky/Cubemap_Sky_lf.png'
+    ]);
+    scene.background = cubeMap;
+
     // Ground plane
-    const groundGeo = new THREE.PlaneGeometry(groundWidth, groundDepth);
-    const groundMat = new THREE.MeshStandardMaterial({ color: groundColor });
-    const ground = new THREE.Mesh(groundGeo, groundMat);
+    const ground = new THREE.Mesh (
+        new THREE.PlaneGeometry(groundWidth, groundDepth),
+        new THREE.MeshStandardMaterial({ map: groundTexture, roughness: 0.8 })
+    );
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
-    ground.position.y = -0.1;
+    ground.position.y = 0;
     scene.add(ground);
 
     // ================================
@@ -85,6 +116,8 @@ export function createRoom() {
                                                     side: THREE.DoubleSide});     
     const body = new THREE.Mesh(bodyGeo, bodyMat);
     body.position.set(rumahPosX, rumahPosY, rumahPosZ);
+    body.castShadow = true;
+    body.receiveShadow = true;
     scene.add(body);
 
     // Outline dinding
@@ -113,6 +146,8 @@ export function createRoom() {
     const atapMat = new THREE.MeshStandardMaterial({ color: warnaAtap });
     const atap = new THREE.Mesh(atapGeo, atapMat);
     atap.position.set(rumahPosX, rumahPosY + rumahTinggi / 2, rumahPosZ - atapLebar / 2);
+    atap.castShadow = true;
+    atap.receiveShadow = true;
     scene.add(atap);
 
     // Outline atap
@@ -130,6 +165,7 @@ export function createRoom() {
     const pintu = new THREE.Mesh(pintuGeo, pintuMat);
     pintu.position.set(pintuPosX, pintuPosY, pintuPosZ);
     pintu.name = "door";
+    pintu.castShadow = true;
     scene.add(pintu);
 
     // Outline pintu
@@ -146,6 +182,7 @@ export function createRoom() {
     const kacaMat = new THREE.MeshStandardMaterial({ color: kacaWarna, transparent: true, opacity: 0.7 });
     const kaca = new THREE.Mesh(kacaGeo, kacaMat);
     kaca.position.set(kacaPosX, kacaPosY, kacaPosZ);
+    kaca.castShadow = true;
     scene.add(kaca);
 
     // Outline kaca
