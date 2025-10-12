@@ -2,6 +2,8 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.m
 import { createRoom } from './Outside.js';
 import { createInside } from './Inside.js'; 
 import { createFPSCamera } from './camera.js';
+import { rotatePedestalItems } from './pedestal_item.js';
+
 
 // ===================== Variables =====================
 let { scene, pintu } = createRoom();
@@ -38,13 +40,14 @@ document.addEventListener('click', () => {
         if (intersects.length > 0) {
             isTransitioning = true;
             startFade(1, () => {
-                const { scene: insideSceneObj, exitDoor } = createInside();
-
+                const { scene: insideSceneObj, exitDoor, cameraLight, rotatingItems } = createInside();
                 disposeScene(activeScene);
 
                 activeScene = insideSceneObj;
                 activeScene.add(yawObject);
                 activeScene.userData.exitDoor = exitDoor;
+                activeScene.userData.cameraLight = cameraLight;
+                activeScene.userData.rotatingItems = rotatingItems;
                 insideScene = true;
                 startFade(-1, () => { isTransitioning = false; });
             });
@@ -143,6 +146,13 @@ function animate() {
     lastFrameTime = now;
 
     update(delta);
+    if (insideScene && activeScene.userData.cameraLight) {
+    const light = activeScene.userData.cameraLight;
+    light.position.copy(yawObject.position).add(new THREE.Vector3(0, 1.5, 0));
+    }
+    if (insideScene && activeScene.userData.rotatingItems) {
+        rotatePedestalItems(activeScene.userData.rotatingItems, delta);
+    }
     renderer.render(activeScene, camera);
 
     // Handle fade animation

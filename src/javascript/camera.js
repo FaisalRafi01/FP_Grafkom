@@ -38,7 +38,13 @@ export function createFPSCamera(domElement = document.body) {
     document.addEventListener('mousemove', onMouseMove);
 
     function update(delta) {
-        const speed = 5;
+        let speed = 5;
+
+        // Sprint: multiply speed by 3 when Shift is held
+        if (keys['ShiftLeft'] || keys['ShiftRight']) {
+            speed *= 3;
+        }
+
         const move = new THREE.Vector3();
 
         if (keys['KeyW']) move.z -= 1;
@@ -55,6 +61,7 @@ export function createFPSCamera(domElement = document.body) {
             yawObject.position.addScaledVector(right, move.x * speed * delta);
         }
     }
+
 
     function dispose() {
         document.removeEventListener('keydown', onKeyDown);
