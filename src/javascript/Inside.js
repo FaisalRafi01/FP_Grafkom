@@ -34,7 +34,7 @@ export function createInside() {
         new THREE.BoxGeometry(2, 4, 0.2),
         new THREE.MeshStandardMaterial({ color: warnaDoor })
     );
-    exitDoor.position.set(-1, 2, 5);
+    exitDoor.position.set(0, 2, 5);
     scene.add(exitDoor);
     exitDoor.name = 'exitDoor';
 
