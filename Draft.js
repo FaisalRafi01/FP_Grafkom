@@ -13,28 +13,42 @@ export function createShape(shapeName) {
             break;
         }
         case 'sphere': {
-            const geo = new THREE.SphereGeometry(0.5, 32, 32);
-            const mat = new THREE.MeshStandardMaterial({ color: 0xff6666, metalness: 0.4, roughness: 0.5 });
+            const geo = new THREE.SphereGeometry(0.55, 48, 48);
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0xff6688,
+                metalness: 0.3,
+                roughness: 0.25,
+                emissive: 0x220011,
+                emissiveIntensity: 0.4
+            });
             mesh = new THREE.Mesh(geo, mat);
-            mesh.rotationSpeed = 0.7;
+            mesh.scalePulse = true;
             break;
         }
         case 'cone': {
-            const geo = new THREE.ConeGeometry(0.5, 1, 32);
-            const mat = new THREE.MeshStandardMaterial({ color: 0x66ff66, metalness: 0.4, roughness: 0.5 });
+            const geo = new THREE.ConeGeometry(0.45, 1, 48);
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0x88ff66,
+                metalness: 0.2,
+                roughness: 0.5
+            });
             mesh = new THREE.Mesh(geo, mat);
-            mesh.rotationSpeed = 1.0;
+            mesh.wobble = true;
+            // sedikit angkat biar ga nembus pedestal
+            mesh.position.y += 0.3;
             break;
         }
         case 'cylinder': {
-            const geo = new THREE.CylinderGeometry(0.35, 0.35, 1, 20);
+            const geo = new THREE.CylinderGeometry(0.35, 0.35, 1, 48, 1, false);
             const mat = new THREE.MeshStandardMaterial({
                 color: 0xffff66,
                 metalness: 0.3,
                 roughness: 0.3
             });
             mesh = new THREE.Mesh(geo, mat);
-            mesh.spinReverse = true;
+            mesh.verticalBob = true;
+            // tambahkan sedikit rotasi biar gak flat
+            mesh.rotation.x = Math.PI * 0.05;
             break;
         }
         case 'torus': {
@@ -55,6 +69,7 @@ export function createShape(shapeName) {
             const geo = new THREE.OctahedronGeometry(0.6);
             const mat = new THREE.MeshStandardMaterial({ color: 0xffcc66, metalness: 0.4, roughness: 0.3 });
             mesh = new THREE.Mesh(geo, mat);
+            mesh.scalePulse = true;
             break;
         }
         case 'dodecahedron': {
@@ -68,6 +83,7 @@ export function createShape(shapeName) {
             const geo = new THREE.IcosahedronGeometry(0.6);
             const mat = new THREE.MeshStandardMaterial({ color: 0xff99cc, metalness: 0.3, roughness: 0.3 });
             mesh = new THREE.Mesh(geo, mat);
+            mesh.verticalBob = true;
             break;
         }
         case 'torusKnot': {
@@ -124,4 +140,18 @@ export function rotatePedestalItems(itemsArray, delta, elapsed) {
         item.rotation.y += delta * 0.3;
     });
 }
+
+    switch (shapeName) {
+        case 'cube': return new THREE.BoxGeometry(1,1,1);
+        case 'sphere': return new THREE.SphereGeometry(0.5,32,32);
+        case 'cone': return new THREE.ConeGeometry(0.5,1,32);
+        case 'cylinder': return new THREE.CylinderGeometry(0.4,0.4,1,32);
+        case 'torus': return new THREE.TorusGeometry(0.4,0.15,16,100);
+        case 'tetrahedron': return new THREE.TetrahedronGeometry(0.5);
+        case 'octahedron': return new THREE.OctahedronGeometry(0.5);
+        case 'dodecahedron': return new THREE.DodecahedronGeometry(0.5);
+        case 'icosahedron': return new THREE.IcosahedronGeometry(0.5);
+        case 'torusKnot': return new THREE.TorusKnotGeometry(0.3,0.1,100,16);
+        default: return new THREE.BoxGeometry(1,1,1);
+    }
     

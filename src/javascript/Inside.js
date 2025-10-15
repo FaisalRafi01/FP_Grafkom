@@ -38,7 +38,7 @@ export function createInside() {
     scene.add(exitDoor);
     exitDoor.name = 'exitDoor';
 
-    // ========================= Pedestals =========================
+    // Pedestals setup
     const tubeRadius = 0.5;
     const tubeHeight = 2;
     const tubeSegments = 32;
@@ -47,11 +47,16 @@ export function createInside() {
     const pedestal_count = 9; 
     const spacing = 6;
 
-    const shapes = ['cube','sphere','cone','cylinder','torus','tetrahedron','octahedron','dodecahedron','icosahedron','torusKnot'];
+    const shapes = [
+        'cube','sphere','cone','cylinder',
+        'torus','tetrahedron','octahedron','dodecahedron','icosahedron','torusKnot'
+    ];
     const rotatingItems = []; 
 
     function createPedestal(x, z, shapeIndex) {
-        // Tube
+        const shapeName = shapes[shapeIndex];
+        console.log(`Creating pedestal at (${x}, ${z}) with shape: ${shapeName}`);
+        // Pedestal base
         const tube = new THREE.Mesh(
             new THREE.CylinderGeometry(tubeRadius, tubeRadius, tubeHeight, tubeSegments),
             new THREE.MeshStandardMaterial({ color: warnaPedestal })
@@ -61,7 +66,7 @@ export function createInside() {
         tube.receiveShadow = true;
         scene.add(tube);
 
-        // Flat top
+        // Pedestal top
         const top = new THREE.Mesh(
             new THREE.CylinderGeometry(tubeRadius + 1, tubeRadius + 1, 0.1, tubeSegments),
             new THREE.MeshStandardMaterial({ color: warnaPedestal })
@@ -71,16 +76,14 @@ export function createInside() {
         top.receiveShadow = true;
         scene.add(top);
 
-        // Shape on pedestal
-        const shapeGeo = createShape(shapes[shapeIndex]);
-        const shapeMat = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff });
-        const shape = new THREE.Mesh(shapeGeo, shapeMat);
-        shape.position.set(x, tubeHeight + 1, z); // Taro atas pedestal
+        // Shape
+        const shape = createShape(shapes[shapeIndex]);
+        shape.position.set(x, tubeHeight + 1, z);
         shape.castShadow = true;
         shape.receiveShadow = true;
         scene.add(shape);
 
-        rotatingItems.push(shape); // animation
+        rotatingItems.push(shape);
     }
 
     // Left pedestals
@@ -94,8 +97,8 @@ export function createInside() {
     }
 
     // Moving light
-    const cameraLight = new THREE.PointLight(0xffffff, 0.8, 15);
-    cameraLight.position.set(0, -5, 0);
+    const cameraLight = new THREE.PointLight(0xffffff, 1, 20);
+    cameraLight.position.set(0, 5, 0);
     scene.add(cameraLight);
 
     return { scene, exitDoor, cameraLight, rotatingItems };
