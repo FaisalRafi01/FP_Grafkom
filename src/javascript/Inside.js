@@ -24,9 +24,10 @@ export function createInside() {
     scene.add(floor);
 
     // Lighting
-    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-    const point = new THREE.PointLight(0xffffff, 1, 100);
+    const ambient = new THREE.AmbientLight(0xffffff, 0.01);
+    const point = new THREE.PointLight(0xffffff, 1, 25);
     point.position.set(0, 20, 0);
+    point.castShadow = true;
     scene.add(ambient, point);
 
     // Exit door
@@ -35,6 +36,8 @@ export function createInside() {
         new THREE.MeshStandardMaterial({ color: warnaDoor })
     );
     exitDoor.position.set(0, 2, 5);
+    exitDoor.castShadow = true;
+    exitDoor.receiveShadow = true;
     scene.add(exitDoor);
     exitDoor.name = 'exitDoor';
 
@@ -42,8 +45,6 @@ export function createInside() {
     const tubeRadius = 0.5;
     const tubeHeight = 2;
     const tubeSegments = 32;
-    const tubeRange_width = 6;
-    const tubeRange_length = 1;
     const pedestal_count = 9; 
     const spacing = 6;
 
@@ -53,53 +54,92 @@ export function createInside() {
     ];
     const rotatingItems = []; 
 
+    // Reflection envMap for top surfaces
+    const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(128);
+    const cubeCamera = new THREE.CubeCamera(0.1, 1000, cubeRenderTarget);
+    scene.add(cubeCamera);
+
+    const envMapMaterial = new THREE.MeshStandardMaterial({
+        color: 0xcccccc,
+        metalness: 1,
+        roughness: 0.1,
+        envMap: cubeRenderTarget.texture
+    });
+
     function createPedestal(x, z, shapeIndex) {
         const shapeName = shapes[shapeIndex];
         console.log(`Creating pedestal at (${x}, ${z}) with shape: ${shapeName}`);
-        // Pedestal base
-        const tube = new THREE.Mesh(
+
+        const group = new THREE.Group();
+        const heightOffset = (Math.random() * 0.4) - 0.2; // vary height slightly
+
+        // Base (stone-like wide bottom)
+        const base = new THREE.Mesh(
+            new THREE.CylinderGeometry(tubeRadius * 2, tubeRadius * 2.2, 0.4, tubeSegments),
+            new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8, metalness: 0.2 })
+        );
+        base.position.y = 0.2 + heightOffset;
+        base.castShadow = true;
+        base.receiveShadow = true;
+        group.add(base);
+
+        // Column (main pedestal body)
+        const column = new THREE.Mesh(
             new THREE.CylinderGeometry(tubeRadius, tubeRadius, tubeHeight, tubeSegments),
-            new THREE.MeshStandardMaterial({ color: warnaPedestal })
+            new THREE.MeshStandardMaterial({ color: warnaPedestal, roughness: 0.5, metalness: 0.3 })
         );
-        tube.position.set(x, tubeHeight / 2, z);
-        tube.castShadow = true;
-        tube.receiveShadow = true;
-        scene.add(tube);
+        column.position.y = tubeHeight / 2 + heightOffset;
+        column.castShadow = true;
+        column.receiveShadow = true;
+        group.add(column);
 
-        // Pedestal top
-        const top = new THREE.Mesh(
-            new THREE.CylinderGeometry(tubeRadius + 1, tubeRadius + 1, 0.1, tubeSegments),
-            new THREE.MeshStandardMaterial({ color: warnaPedestal })
+        // Top Cap (reflective metal plate)
+        const cap = new THREE.Mesh(
+            new THREE.CylinderGeometry(tubeRadius + 0.8, tubeRadius + 0.8, 0.15, tubeSegments),
+            envMapMaterial
         );
-        top.position.set(x, tubeHeight + 0.05, z);
-        top.castShadow = true;
-        top.receiveShadow = true;
-        scene.add(top);
+        cap.position.y = tubeHeight + 0.1 + heightOffset;
+        cap.castShadow = true;
+        cap.receiveShadow = true;
+        group.add(cap);
 
-        // Shape
-        const shape = createShape(shapes[shapeIndex]);
-        shape.position.set(x, tubeHeight + 1, z);
+        // Small emissive glow ring
+        const glow = new THREE.Mesh(
+            new THREE.TorusGeometry(tubeRadius + 0.6, 0.05, 16, 100),
+            new THREE.MeshStandardMaterial({ color: 0x99ccff, emissive: 0x99ccff, emissiveIntensity: 0.5 })
+        );
+        glow.position.y = tubeHeight + 0.18 + heightOffset;
+        glow.rotation.x = Math.PI / 2;
+        group.add(glow);
+
+        // Shape on top
+        const shape = createShape(shapeName);
+        shape.position.y = tubeHeight + 1 + heightOffset;
         shape.castShadow = true;
         shape.receiveShadow = true;
-        scene.add(shape);
-
+        group.add(shape);
         rotatingItems.push(shape);
+
+        // Group position
+        group.position.set(x, 0, z);
+        scene.add(group);
     }
 
     // Left pedestals
     for (let i = 0; i <= pedestal_count; i++) {
-        createPedestal(-tubeRange_width, -tubeRange_length * (i * spacing), i % shapes.length);
+        createPedestal(-6, -(i * spacing), i % shapes.length);
     }
 
     // Right pedestals
     for (let i = 0; i <= pedestal_count; i++) {
-        createPedestal(tubeRange_width, -tubeRange_length * (i * spacing), i % shapes.length);
+        createPedestal(6, -(i * spacing), i % shapes.length);
     }
 
     // Moving light
     const cameraLight = new THREE.PointLight(0xffffff, 1, 20);
     cameraLight.position.set(0, 5, 0);
+    cameraLight.castShadow = true;
     scene.add(cameraLight);
 
-    return { scene, exitDoor, cameraLight, rotatingItems };
+    return { scene, exitDoor, cameraLight, rotatingItems, cubeCamera };
 }

@@ -195,10 +195,5 @@ export function createRoom() {
     worldGroup.position.set(0, 0, -15);
     scene.add(worldGroup);
 
-    // ===================================
-    // Camera Start
-    // ===================================
-    const cameraStart = new THREE.Vector3(0, museumHeight * 0.9, 8);
-
-    return { scene, pintu: door, cameraStart };
+    return { scene, pintu: door };
 }
