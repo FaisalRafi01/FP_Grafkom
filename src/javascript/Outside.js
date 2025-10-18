@@ -8,191 +8,197 @@ export function createRoom() {
     
     //Scaler
     const scale = 2;
-    // Ukuran lantai
-    const groundWidth = 200;
-    const groundDepth = 200;
-    const groundColor = 0x228B22;
-
-    // Control Variables
-    const repeatX = 128, repeatY = 128;
-
-    // Ukuran rumah (persegi panjang)
-    const rumahPanjang = 6*scale;
-    const rumahLebar = 4*scale;
-    const rumahTinggi = 3*scale;
-    const warnaDinding = 0xffcc99;
-
-    // Ukuran atap (prisma segitiga)
-    const atapLebar = rumahLebar + 0.2*scale;
-    const atapPanjang = rumahPanjang + 0.2*scale;
-    const atapTinggi = 2*scale;
-    const warnaAtap = 0xaa3333;
-
-    // Posisi rumah
-    const rumahPosX = 0;
-    const rumahPosY = rumahTinggi / 2;
-    const rumahPosZ = -5;
-
-    // Variabel Pintu 
-    const pintuLebar = 1*scale;
-    const pintuTinggi = 2*scale;
-    const pintuWarna = 0x8b4513;
-    const pintuPosX = rumahPosX; 
-    const pintuPosY = pintuTinggi / 2;
-    const pintuPosZ = rumahPosZ + rumahLebar / 2 + 0.01; // sedikit keluar dari dinding depan
-
-    // Variabel Kaca (jendela) 
-    const kacaLebar = 1.2*scale;
-    const kacaTinggi = 1*scale;
-    const kacaWarna = 0x87ceeb;
-    const kacaPosX = rumahPosX - rumahPanjang / 3;
-    const kacaPosY = rumahTinggi / 1.5;
-    const kacaPosZ = rumahPosZ + rumahLebar / 2 + 0.01;
-
 
     // ================================
     // Scene setup
     // ================================
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xa0a0a0);
+    scene.background = new THREE.Color(0xa0c0ff);
 
     // Directional light
-    const dir = new THREE.DirectionalLight(0xffffff, 1);
-    dir.position.set(50, 50, 5);
+    const dir = new THREE.DirectionalLight(0xffffff, 1.2);
+    dir.position.set(-30, 80, 50);
     dir.castShadow = true;
     dir.shadow.mapSize.set(4096, 4096);
-    dir.shadow.camera.near = 0.5;
-    dir.shadow.camera.far = 100;
-    dir.shadow.camera.left = -50;
-    dir.shadow.camera.right = 50;
-    dir.shadow.camera.top = 50;
-    dir.shadow.camera.bottom = -50;
-
+    dir.shadow.camera.near = 1;
+    dir.shadow.camera.far = 200;
+    dir.shadow.camera.left = -100;
+    dir.shadow.camera.right = 100;
+    dir.shadow.camera.top = 100;
+    dir.shadow.camera.bottom = -100;
     scene.add(dir);
     
-    const lightHelper = new THREE.DirectionalLightHelper(dir, 5);
-    scene.add(lightHelper);
-
-    // Ambient light
-    const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+    const ambient = new THREE.AmbientLight(0xffffff, 0.01);
     scene.add(ambient);
 
-    // Texture
-    const loaderTexture = new THREE.TextureLoader();
-
-    const groundTexture = loaderTexture.load('../public/assets/texture/Stone-tile.jpg');
-    groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
-    groundTexture.repeat.set(repeatX, repeatY);
-
+    // ===================================
     // Environment map
+    // ===================================
     const loaderEnv = new THREE.CubeTextureLoader();
-    const cubeMap = loaderEnv.load([
-        '../public/assets/skybox/Sky/Cubemap_Sky_bk.png',
-        '../public/assets/skybox/Sky/Cubemap_Sky_ft.png',
-        '../public/assets/skybox/Sky/Cubemap_Sky_up.png',
-        '../public/assets/skybox/Sky/Cubemap_Sky_dn.png',
-        '../public/assets/skybox/Sky/Cubemap_Sky_rt.png',
-        '../public/assets/skybox/Sky/Cubemap_Sky_lf.png'
+    const envMap = loaderEnv.load([
+        '../public/assets/skybox/Sunset/px.png',
+        '../public/assets/skybox/Sunset/nx.png',
+        '../public/assets/skybox/Sunset/py.png',
+        '../public/assets/skybox/Sunset/ny.png',
+        '../public/assets/skybox/Sunset/pz.png',
+        '../public/assets/skybox/Sunset/nz.png'
     ]);
-    scene.background = cubeMap;
+    scene.background = envMap;
 
-    // Ground plane
-    const ground = new THREE.Mesh (
-        new THREE.PlaneGeometry(groundWidth, groundDepth),
-        new THREE.MeshStandardMaterial({ map: groundTexture, roughness: 0.8 })
+    // ===================================
+    // Floating Island
+    // ===================================
+    const islandRadius = 30;
+    const islandHeight = 8;
+
+    const islandBaseGeo = new THREE.ConeGeometry(islandRadius, islandHeight * 2, 64);
+    const islandBaseMat = new THREE.MeshStandardMaterial({
+        color: 0x6b4f36,
+        roughness: 0.9,
+        metalness: 0.05
+    });
+    const islandBase = new THREE.Mesh(islandBaseGeo, islandBaseMat);
+    islandBase.rotation.x = Math.PI;
+    islandBase.position.y = -islandHeight;
+    islandBase.castShadow = true;
+    islandBase.receiveShadow = true;
+
+    const grassGeo = new THREE.CircleGeometry(islandRadius * 0.9, 64);
+    const grassMat = new THREE.MeshStandardMaterial({
+        color: 0x3fa63f,
+        roughness: 1.0
+    });
+    const grass = new THREE.Mesh(grassGeo, grassMat);
+    grass.rotation.x = -Math.PI / 2;
+    grass.position.y = 0.1;
+    grass.castShadow = true;
+    grass.receiveShadow = true;
+
+    const islandGroup = new THREE.Group();
+    islandGroup.add(islandBase, grass);
+
+    // ===================================
+    // Museum Structure
+    // ===================================
+    const museumHeight = 4 * scale;
+    const museumWidth = 10 * scale;
+    const museumDepth = 8 * scale;
+
+    const baseMat = new THREE.MeshStandardMaterial({
+        color: 0xe0e0e0,
+        roughness: 0.6,
+        metalness: 0.3,
+        envMap: envMap,
+        envMapIntensity: 0.4
+    });
+
+    const mainBody = new THREE.Mesh(
+        new THREE.BoxGeometry(museumWidth, museumHeight, museumDepth),
+        baseMat
     );
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    ground.position.y = 0;
-    scene.add(ground);
+    mainBody.position.set(0, museumHeight / 2, 0);
+    mainBody.castShadow = true;
+    mainBody.receiveShadow = true;
 
-    // ================================
-    // Membuat Rumah
-    // ================================
+    const sideWingGeo = new THREE.BoxGeometry(museumWidth * 0.5, museumHeight * 0.7, museumDepth * 0.4);
+    const sideLeft = new THREE.Mesh(sideWingGeo, baseMat);
+    sideLeft.position.set(-museumWidth * 0.6, museumHeight * 0.35, 0);
+    sideLeft.castShadow = true;
+    sideLeft.receiveShadow = true;
 
-    // ========== Dinding (persegi panjang) ==========
-    const bodyGeo = new THREE.BoxGeometry(rumahPanjang, rumahTinggi, rumahLebar);
-    const bodyMat = new THREE.MeshStandardMaterial({color: warnaDinding,
-                                                    side: THREE.DoubleSide});     
-    const body = new THREE.Mesh(bodyGeo, bodyMat);
-    body.position.set(rumahPosX, rumahPosY, rumahPosZ);
-    body.castShadow = true;
-    body.receiveShadow = true;
-    scene.add(body);
+    const sideRight = new THREE.Mesh(sideWingGeo, baseMat);
+    sideRight.position.set(museumWidth * 0.6, museumHeight * 0.35, 0);
+    sideRight.castShadow = true;
+    sideRight.receiveShadow = true;
 
-    // Outline dinding
-    const bodyEdges = new THREE.EdgesGeometry(bodyGeo);
-    const bodyOutline = new THREE.LineSegments(
-        bodyEdges,
-        new THREE.LineBasicMaterial({ color: 0x000000 })
+    const roofPanel = new THREE.Mesh(
+        new THREE.BoxGeometry(museumWidth * 1.2, 0.3, museumDepth * 1.3),
+        new THREE.MeshStandardMaterial({
+            color: 0xcccccc,
+            metalness: 0.6,
+            roughness: 0.3,
+            envMap: envMap
+        })
     );
-    bodyOutline.position.copy(body.position);
-    scene.add(bodyOutline);
+    roofPanel.position.set(0, museumHeight + 0.2, museumDepth * -0.025);
+    roofPanel.castShadow = true;
+    roofPanel.receiveShadow = true;
 
-    // ========== Atap (prisma segitiga) ==========
-    const atapShape = new THREE.Shape();
-    atapShape.moveTo(-atapPanjang / 2, 0);
-    atapShape.lineTo(0, atapTinggi);
-    atapShape.lineTo(atapPanjang / 2, 0);
-    atapShape.lineTo(-atapPanjang / 2, 0);
+    const glassGeo = new THREE.PlaneGeometry(museumWidth * 0.8, museumHeight * 0.8);
+    const glassMat = new THREE.MeshStandardMaterial({
+        color: 0x88ccff,
+        envMap: envMap,
+        metalness: 1.0,
+        roughness: 0.05,
+        transparent: true,
+        opacity: 0.7
+    });
+    const glass = new THREE.Mesh(glassGeo, glassMat);
+    glass.position.set(0, museumHeight / 2, museumDepth / 2 + 0.01);
+    glass.castShadow = true;
+    glass.receiveShadow = true;
 
-    const extrudeSettings = {
-        steps: 1,
-        depth: atapLebar,
-        bevelEnabled: false
-    };
+    const doorWidth = 1.2 * scale;
+    const doorHeight = 2.4 * scale;
+    const doorGeo = new THREE.BoxGeometry(doorWidth, doorHeight, 0.1);
+    const doorMat = new THREE.MeshStandardMaterial({ color: 0x6b3a1e });
+    const door = new THREE.Mesh(doorGeo, doorMat);
+    door.position.set(0, doorHeight / 2, museumDepth / 2 + 0.05);
+    door.name = "door";
+    door.castShadow = true;
+    door.receiveShadow = true;
 
-    const atapGeo = new THREE.ExtrudeGeometry(atapShape, extrudeSettings);
-    const atapMat = new THREE.MeshStandardMaterial({ color: warnaAtap });
-    const atap = new THREE.Mesh(atapGeo, atapMat);
-    atap.position.set(rumahPosX, rumahPosY + rumahTinggi / 2, rumahPosZ - atapLebar / 2);
-    atap.castShadow = true;
-    atap.receiveShadow = true;
-    scene.add(atap);
+    const museumGroup = new THREE.Group();
+    museumGroup.add(mainBody, sideLeft, sideRight, roofPanel, glass, door);
+    museumGroup.position.y = 0.1;
 
-    // Outline atap
-    const atapEdges = new THREE.EdgesGeometry(atapGeo);
-    const atapOutline = new THREE.LineSegments(
-        atapEdges,
-        new THREE.LineBasicMaterial({ color: 0x000000 })
-    );
-    atapOutline.position.copy(atap.position);
-    scene.add(atapOutline);
+    // ===================================
+    // Decorations
+    // ===================================
+    const treeMat = new THREE.MeshStandardMaterial({ color: 0x2e8b57 });
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5a3a1a });
+    for (let i = 0; i < 4; i++) {
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 2, 8), trunkMat);
+        const leaves = new THREE.Mesh(new THREE.SphereGeometry(1.2, 12, 12), treeMat);
+        const angle = i * Math.PI / 2 + 0.4;
+        const r = islandRadius * 0.6;
+        trunk.position.set(Math.cos(angle) * r, 1, Math.sin(angle) * r);
+        leaves.position.set(trunk.position.x, trunk.position.y + 2, trunk.position.z);
+        trunk.castShadow = true;
+        trunk.receiveShadow = true;
+        leaves.castShadow = true;
+        leaves.receiveShadow = true;
+        islandGroup.add(trunk, leaves);
+    }
 
-    // ========== Pintu ==========
-    const pintuGeo = new THREE.BoxGeometry(pintuLebar, pintuTinggi, 0.1);
-    const pintuMat = new THREE.MeshStandardMaterial({ color: pintuWarna });
-    const pintu = new THREE.Mesh(pintuGeo, pintuMat);
-    pintu.position.set(pintuPosX, pintuPosY, pintuPosZ);
-    pintu.name = "door";
-    pintu.castShadow = true;
-    scene.add(pintu);
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+    for (let i = 0; i < 10; i++) {
+        const rock = new THREE.Mesh(
+            new THREE.DodecahedronGeometry(0.4 + Math.random() * 0.6),
+            rockMat
+        );
+        const angle = Math.random() * Math.PI * 2;
+        const r = islandRadius * 0.7 * Math.random();
+        rock.position.set(Math.cos(angle) * r, 0.3, Math.sin(angle) * r);
+        rock.rotation.y = Math.random() * Math.PI;
+        rock.castShadow = true;
+        rock.receiveShadow = true;
+        islandGroup.add(rock);
+    }
 
-    // Outline pintu
-    const pintuEdges = new THREE.EdgesGeometry(pintuGeo);
-    const pintuOutline = new THREE.LineSegments(
-        pintuEdges,
-        new THREE.LineBasicMaterial({ color: 0x000000 })
-    );
-    pintuOutline.position.copy(pintu.position);
-    scene.add(pintuOutline);
+    // ===================================
+    // Combine island + museum
+    // ===================================
+    const worldGroup = new THREE.Group();
+    worldGroup.add(islandGroup);
+    worldGroup.add(museumGroup);
+    worldGroup.position.set(0, 0, -15);
+    scene.add(worldGroup);
 
-    // ========== Kaca ==========
-    const kacaGeo = new THREE.BoxGeometry(kacaLebar, kacaTinggi, 0.05);
-    const kacaMat = new THREE.MeshStandardMaterial({ color: kacaWarna, transparent: true, opacity: 0.7 });
-    const kaca = new THREE.Mesh(kacaGeo, kacaMat);
-    kaca.position.set(kacaPosX, kacaPosY, kacaPosZ);
-    kaca.castShadow = true;
-    scene.add(kaca);
+    // ===================================
+    // Camera Start
+    // ===================================
+    const cameraStart = new THREE.Vector3(0, museumHeight * 0.9, 8);
 
-    // Outline kaca
-    const kacaEdges = new THREE.EdgesGeometry(kacaGeo);
-    const kacaOutline = new THREE.LineSegments(
-        kacaEdges,
-        new THREE.LineBasicMaterial({ color: 0x000000 })
-    );
-    kacaOutline.position.copy(kaca.position);
-    scene.add(kacaOutline);
-
-    return {scene,pintu};
+    return { scene, pintu: door, cameraStart };
 }
