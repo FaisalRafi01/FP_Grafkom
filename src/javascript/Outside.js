@@ -13,7 +13,6 @@ export function createRoom() {
     // Scene setup
     // ================================
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xa0c0ff);
 
     // Directional light
     const dir = new THREE.DirectionalLight(0xffffff, 1.2);
@@ -106,10 +105,8 @@ export function createRoom() {
     sideLeft.castShadow = true;
     sideLeft.receiveShadow = true;
 
-    const sideRight = new THREE.Mesh(sideWingGeo, baseMat);
-    sideRight.position.set(museumWidth * 0.6, museumHeight * 0.35, 0);
-    sideRight.castShadow = true;
-    sideRight.receiveShadow = true;
+    const sideRight = sideLeft.clone();
+    sideRight.position.x *= -1;
 
     const roofPanel = new THREE.Mesh(
         new THREE.BoxGeometry(museumWidth * 1.2, 0.3, museumDepth * 1.3),
@@ -138,15 +135,13 @@ export function createRoom() {
     glass.castShadow = true;
     glass.receiveShadow = true;
 
-    const doorWidth = 1.2 * scale;
-    const doorHeight = 2.4 * scale;
-    const doorGeo = new THREE.BoxGeometry(doorWidth, doorHeight, 0.1);
+    const doorGeo = new THREE.BoxGeometry(1.2 * scale, 2.4 * scale, 0.1);
     const doorMat = new THREE.MeshStandardMaterial({ color: 0x6b3a1e });
     const door = new THREE.Mesh(doorGeo, doorMat);
-    door.position.set(0, doorHeight / 2, museumDepth / 2 + 0.05);
-    door.name = "door";
+    door.position.set(0, doorGeo.parameters.height / 2, museumDepth / 2 + 0.05);
     door.castShadow = true;
     door.receiveShadow = true;
+    door.name = "door";
 
     const museumGroup = new THREE.Group();
     museumGroup.add(mainBody, sideLeft, sideRight, roofPanel, glass, door);
@@ -155,22 +150,95 @@ export function createRoom() {
     // ===================================
     // Decorations
     // ===================================
-    const treeMat = new THREE.MeshStandardMaterial({ color: 0x2e8b57 });
+    
+    // Trees
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5a3a1a });
-    for (let i = 0; i < 4; i++) {
-        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 2, 8), trunkMat);
-        const leaves = new THREE.Mesh(new THREE.SphereGeometry(1.2, 12, 12), treeMat);
-        const angle = i * Math.PI / 2 + 0.4;
-        const r = islandRadius * 0.6;
-        trunk.position.set(Math.cos(angle) * r, 1, Math.sin(angle) * r);
-        leaves.position.set(trunk.position.x, trunk.position.y + 2, trunk.position.z);
-        trunk.castShadow = true;
-        trunk.receiveShadow = true;
-        leaves.castShadow = true;
-        leaves.receiveShadow = true;
-        islandGroup.add(trunk, leaves);
+    const leafMat = new THREE.MeshStandardMaterial({ color: 0x2e8b57 });
+
+    const treeCount = 8;
+
+    for (let i = 0; i < treeCount; i++) {
+        const treeGroup = new THREE.Group();
+        const type = Math.floor(Math.random() * 2);
+
+        // Outskirts placement
+        const minRadius = islandRadius * 0.6;
+        const maxRadius = islandRadius * 0.9;
+        const r = minRadius + Math.random() * (maxRadius - minRadius);
+        const angle = Math.random() * Math.PI * 2;
+        const x = Math.cos(angle) * r;
+        const z = Math.sin(angle) * r;
+
+        switch (type) {
+            case 0: // Pine / layered cone
+                const trunkHeight = 3.0 + Math.random() * 1.0;
+                const trunkRadiusTop = 0.4 + Math.random() * 0.2;
+                const trunkRadiusBottom = 0.5 + Math.random() * 0.2;
+                const trunk = new THREE.Mesh(
+                    new THREE.CylinderGeometry(trunkRadiusTop, trunkRadiusBottom, trunkHeight, 10),
+                    trunkMat
+                );
+                trunk.position.y = trunkHeight / 2;
+                treeGroup.add(trunk);
+
+                const layers = 3 + Math.floor(Math.random() * 2);
+                let currentY = trunkHeight * 0.6;
+                for (let j = 0; j < layers; j++) {
+                    const coneRadius = 1.8 - j * 0.4 + Math.random() * 0.3;
+                    const coneHeight = 1.8 + Math.random() * 0.5;
+                    const foliage = new THREE.Mesh(
+                        new THREE.ConeGeometry(coneRadius, coneHeight, 10),
+                        leafMat
+                    );
+                    foliage.position.y = currentY + coneHeight / 2;
+                    currentY += coneHeight * 0.7;
+                    treeGroup.add(foliage);
+                }
+                break;
+
+            case 1: // Bushy / round
+                const bushTrunkHeight = 1.5 + Math.random() * 0.5;
+                const bushTrunk = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.3, 0.3, bushTrunkHeight, 8),
+                    trunkMat
+                );
+                bushTrunk.position.y = bushTrunkHeight / 2;
+                treeGroup.add(bushTrunk);
+
+                const bushRadius = 1.5 + Math.random() * 0.7;
+                const bushFoliage = new THREE.Mesh(
+                    new THREE.SphereGeometry(bushRadius, 16, 16),
+                    leafMat
+                );
+                bushFoliage.position.y = bushTrunkHeight + bushRadius * 0.8;
+                treeGroup.add(bushFoliage);
+                break;
+        }
+
+        // Random rotation and scale
+        treeGroup.position.set(x, 0, z);
+        treeGroup.rotation.y = Math.random() * Math.PI;
+        const scaleRand = 1.1 + Math.random() * 0.6;
+        treeGroup.scale.set(scaleRand, scaleRand, scaleRand);
+
+        // Random cluster offset
+        if (Math.random() < 0.3) {
+            treeGroup.position.x += (Math.random() - 0.5) * 3;
+            treeGroup.position.z += (Math.random() - 0.5) * 3;
+        }
+
+        // Enable shadows
+        treeGroup.traverse(obj => {
+            if (obj.isMesh) {
+                obj.castShadow = true;
+                obj.receiveShadow = true;
+            }
+        });
+
+        islandGroup.add(treeGroup);
     }
 
+    // Rocks
     const rockMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
     for (let i = 0; i < 10; i++) {
         const rock = new THREE.Mesh(
@@ -178,13 +246,91 @@ export function createRoom() {
             rockMat
         );
         const angle = Math.random() * Math.PI * 2;
-        const r = islandRadius * 0.7 * Math.random();
+        const minRadius = islandRadius * 0.6;
+        const maxRadius = islandRadius * 0.85;
+        const r = minRadius + Math.random() * (maxRadius - minRadius);
         rock.position.set(Math.cos(angle) * r, 0.3, Math.sin(angle) * r);
         rock.rotation.y = Math.random() * Math.PI;
         rock.castShadow = true;
         rock.receiveShadow = true;
         islandGroup.add(rock);
     }
+
+    const logMat = new THREE.MeshStandardMaterial({ color: 0x4b2e1e });
+    const shrubMat = new THREE.MeshStandardMaterial({ color: 0x2f8b4c });
+    const smallGrassMat = new THREE.MeshStandardMaterial({ color: 0x3fa63f });
+
+    // Fallen logs
+    const logCount = 3;
+    for (let i = 0; i < logCount; i++) {
+        const logLength = 1.5 + Math.random() * 2.0;
+        const logRadius = 0.2 + Math.random() * 0.2;
+        const log = new THREE.Mesh(
+            new THREE.CylinderGeometry(logRadius, logRadius, logLength, 8),
+            logMat
+        );
+        const angle = Math.random() * Math.PI * 2;
+        const r = islandRadius * 0.5 + Math.random() * 5; // near outskirts
+        log.position.set(Math.cos(angle) * r, 0.1, Math.sin(angle) * r);
+        log.rotation.z = Math.random() * Math.PI; // lying on ground
+        log.rotation.x = Math.random() * Math.PI * 0.3;
+        log.castShadow = true;
+        log.receiveShadow = true;
+        islandGroup.add(log);
+    }
+
+    // Shrubs
+    const shrubCount = 8;
+    for (let i = 0; i < shrubCount; i++) {
+        const shrubRadius = 0.8 + Math.random() * 0.5;
+        const shrubHeight = 0.5 + Math.random() * 0.3;
+        const shrub = new THREE.Mesh(
+            new THREE.SphereGeometry(shrubRadius, 12, 12),
+            shrubMat
+        );
+        const angle = Math.random() * Math.PI * 2;
+        const r = islandRadius * 0.3 + Math.random() * 10;
+        shrub.position.set(Math.cos(angle) * r, shrubHeight / 2, Math.sin(angle) * r);
+        shrub.castShadow = true;
+        shrub.receiveShadow = true;
+        islandGroup.add(shrub);
+    }
+
+    // Grass patches
+    const grassCount = 20;
+    for (let i = 0; i < grassCount; i++) {
+        const grassPatch = new THREE.Mesh(
+            new THREE.PlaneGeometry(0.5 + Math.random() * 0.5, 0.5 + Math.random() * 0.5),
+            smallGrassMat
+        );
+        const angle = Math.random() * Math.PI * 2;
+        const r = Math.random() * islandRadius * 0.9;
+        grassPatch.position.set(Math.cos(angle) * r, 0.05, Math.sin(angle) * r);
+        grassPatch.rotation.x = -Math.PI / 2;
+        grassPatch.rotation.z = Math.random() * Math.PI;
+        grassPatch.castShadow = true;
+        grassPatch.receiveShadow = true;
+        islandGroup.add(grassPatch);
+    }
+
+    // ===================================
+    // Water Body (below island)
+    // ===================================
+    const waterGeo = new THREE.CircleGeometry(100, 128);
+    const waterMat = new THREE.MeshStandardMaterial({
+        color: 0x3377ff,
+        metalness: 0.8,
+        roughness: 0.05,
+        envMap: envMap,
+        envMapIntensity: 1.2,
+        transparent: true,
+        opacity: 0.85
+    });
+    const water = new THREE.Mesh(waterGeo, waterMat);
+    water.rotation.x = -Math.PI / 2;
+    water.position.y = -islandHeight * 0.01; // slightly below the island cone tip
+    water.receiveShadow = true;
+    scene.add(water);
 
     // ===================================
     // Combine island + museum
