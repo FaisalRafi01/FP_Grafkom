@@ -1,6 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
+import * as CANNON from 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js';
 import { createRoom } from './Outside.js';
-import { createInside } from './Inside.js'; 
+import { createInside, updateGachapons, openGachapon } from './Inside.js';
 import { createFPSCamera } from './camera.js';
 import { rotatePedestalItems } from './pedestal_item.js';
 
@@ -12,6 +13,12 @@ let Pointerlock = false;
 let insideScene = false;
 let isTransitioning = false;
 
+// ===================== Physics World =====================
+const world = new CANNON.World();
+world.gravity.set(0, -9.82, 0); // Gravity bumi
+world.broadphase = new CANNON.NaiveBroadphase();
+world.solver.iterations = 10;
+
 // ===================== Renderer =====================
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio || 1);
@@ -21,15 +28,14 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
 //===================== FPS Camera =====================
-const { camera, yawObject, update } = createFPSCamera(renderer.domElement);
-yawObject.position.y = 3;
+const { camera, yawObject, gravity, update } = createFPSCamera(renderer.domElement);
 scene.add(yawObject);
 
 //===================== Raycaster Setup =====================
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
-document.addEventListener('click', () => {
+document.addEventListener('click', (event) => {
     if (!Pointerlock) return;
 
     raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
@@ -40,18 +46,21 @@ document.addEventListener('click', () => {
         if (intersects.length > 0) {
             isTransitioning = true;
             startFade(1, () => {
-                const { scene: insideSceneObj, exitDoor, cameraLight, rotatingItems } = createInside();
+                const insideData = createInside(world);
                 disposeScene(activeScene);
 
-                activeScene = insideSceneObj;
+                activeScene = insideData.scene;
                 activeScene.add(yawObject);
-                activeScene.userData.exitDoor = exitDoor;
-                activeScene.userData.cameraLight = cameraLight;
-                activeScene.userData.rotatingItems = rotatingItems;
+                activeScene.userData.exitDoor = insideData.exitDoor;
+                activeScene.userData.cameraLight = insideData.cameraLight;
+                activeScene.userData.rotatingItems = insideData.rotatingItems;
+                activeScene.userData.gachapons = insideData.gachapons;
+                activeScene.userData.itemManager = insideData.itemManager;
                 insideScene = true;
                 startFade(-1, () => { isTransitioning = false; });
             });
         }
+
     } else {
         // === INSIDE ===
         const exitDoor = activeScene.userData.exitDoor;
@@ -61,7 +70,6 @@ document.addEventListener('click', () => {
                 isTransitioning = true;
                 startFade(1, () => {
                     const { scene: outsideSceneObj, pintu: pintuLuar } = createRoom();
-
                     disposeScene(activeScene);
 
                     activeScene = outsideSceneObj;
@@ -73,8 +81,35 @@ document.addEventListener('click', () => {
                 });
             }
         }
+
+       // === GACHAPON INTERACTION ===
+        const gachapons = activeScene.userData.gachapons;
+        if (gachapons && gachapons.length > 0) {
+            for (let gachapon of gachapons) {
+
+                // klik body gachapon = buka
+                const hitGacha = raycaster.intersectObject(gachapon.baseMesh, true);
+                if (hitGacha.length > 0 && !gachapon.isOpen) {
+                    console.log('🎮 Gachapon clicked! Opening...', { pos: gachapon.position });
+                    openGachapon(activeScene.userData);
+                    break;
+                }
+
+                // klik tombol = keluarkan item
+                if (gachapon.buttonMesh) {
+                    const hitButton = raycaster.intersectObject(gachapon.buttonMesh, true);
+                    if (hitButton.length > 0) {
+                        console.log('🎯 Button clicked! Dispensing item...');
+                        gachapon.shuffleItems();
+                        gachapon.releaseRandomItem(activeScene.userData.itemManager);
+                        break;
+                    }
+                }
+            }
+        }
     }
 });
+
 
 function disposeScene(scene) {
     renderer.renderLists.dispose();
@@ -124,6 +159,7 @@ document.addEventListener('keydown', (event) => {
             document.exitPointerLock();
         }
     }
+
 });
 
 document.addEventListener('pointerlockchange', () => {
@@ -136,6 +172,7 @@ const fpsCounter = document.getElementById("fpsCounter");
 let lastFrameTime = performance.now();
 let fpsLastUpdate = performance.now();
 let frames = 0;
+let elapsedTime = 0;
 
 //===================== Animation Loop =====================
 function animate() {
@@ -144,15 +181,27 @@ function animate() {
     const now = performance.now();
     const delta = (now - lastFrameTime) / 1000;
     lastFrameTime = now;
+    elapsedTime += delta;
+
+    // Update physics world
+    world.step(1/60, delta, 3);
 
     update(delta);
+    
     if (insideScene && activeScene.userData.cameraLight) {
-    const light = activeScene.userData.cameraLight;
-    light.position.copy(yawObject.position).add(new THREE.Vector3(0, 1.5, 0));
+        const light = activeScene.userData.cameraLight;
+        light.position.copy(yawObject.position).add(new THREE.Vector3(0, 1.5, 0));
     }
+    
     if (insideScene && activeScene.userData.rotatingItems) {
         rotatePedestalItems(activeScene.userData.rotatingItems, delta);
     }
+    
+    // Update gachapons system (physics + animation)
+    if (insideScene && activeScene.userData.gachapons) {
+        updateGachapons(activeScene.userData, delta, elapsedTime);
+    }
+
     renderer.render(activeScene, camera);
 
     // Handle fade animation
@@ -181,6 +230,13 @@ function animate() {
     frames++;
     if (now - fpsLastUpdate >= 1000) {
         fpsCounter.textContent = 'FPS: ' + frames;
+        
+        // Log gachapon stats setiap 5 detik (untuk debugging)
+        if (insideScene && activeScene.userData.itemManager && frames % 5 === 0) {
+            const stats = activeScene.userData.itemManager.getStats();
+            console.log('🎮 Gachapon Stats:', stats);
+        }
+        
         frames = 0;
         fpsLastUpdate = now;
     }
@@ -193,3 +249,19 @@ window.addEventListener('resize', () => {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+// ===================== Cleanup on Page Unload =====================
+window.addEventListener('beforeunload', () => {
+    // Cleanup physics bodies
+    world.bodies.forEach(body => {
+        world.removeBody(body);
+    });
+});
+
+// ===================== Debug Info =====================
+console.log('🎮 Main.js initialized with:');
+console.log('   - Physics World: ✅');
+console.log('   - Gachapon System: ✅');
+console.log('   - FPS Controls: ✅');
+console.log('   - Click on door to enter inside room');
+console.log('   - Click on gachapon or press G to open it');

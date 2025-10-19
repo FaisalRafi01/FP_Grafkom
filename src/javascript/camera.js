@@ -9,13 +9,22 @@ export function createFPSCamera(domElement = document.body) {
     yawObject.add(pitchObject);
     pitchObject.add(camera);
 
-    // Initial Position (player height)
-    yawObject.position.set(0, 2, 5);
+    //PLAYER STUFF
+    const playerHeight = 3;
+    const spawnpoint = new THREE.Vector3(0, 30, 8);
+    yawObject.position.copy(spawnpoint); 
+
 
     // Input State
     const keys = {};
     let yaw = 0;
     let pitch = 0;
+
+    // Physics state
+    let velocityY = 0;
+    const gravity = -30;   
+    const jumpSpeed = 15;     
+    let onGround = false;
 
     // Event Handlers
     function onKeyDown(e) { keys[e.code] = true; }
@@ -45,8 +54,8 @@ export function createFPSCamera(domElement = document.body) {
             speed *= 3;
         }
 
+        // === Movement ===
         const move = new THREE.Vector3();
-
         if (keys['KeyW']) move.z -= 1;
         if (keys['KeyS']) move.z += 1;
         if (keys['KeyA']) move.x -= 1;
@@ -60,8 +69,25 @@ export function createFPSCamera(domElement = document.body) {
             yawObject.position.addScaledVector(forward, -move.z * speed * delta);
             yawObject.position.addScaledVector(right, move.x * speed * delta);
         }
-    }
 
+        // === Jump & Gravity ===
+        // Ground at y = 0
+        if (yawObject.position.y <= playerHeight) {
+            yawObject.position.y = playerHeight;
+            velocityY = 0;
+            onGround = true;
+        } else {
+            velocityY += gravity * delta;
+            onGround = false;
+        }
+
+        if (keys['Space'] && onGround) {
+            velocityY = jumpSpeed;
+            onGround = false;
+        }
+
+        yawObject.position.y += velocityY * delta;
+    }
 
     function dispose() {
         document.removeEventListener('keydown', onKeyDown);
