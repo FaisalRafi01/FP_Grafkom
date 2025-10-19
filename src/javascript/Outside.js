@@ -44,30 +44,58 @@ export function createRoom() {
     ]);
     scene.background = envMap;
 
+    // ================================
+    // Texture Loader
+    // ================================
+    const textureLoader = new THREE.TextureLoader();
+    const leavesTex = textureLoader.load('../public/assets/texture/Leaves.jpeg');
+    const grassTex = textureLoader.load('../public/assets/texture/Grass.jpg');
+    const logTex = textureLoader.load('../public/assets/texture/Log.jpg');
+    const rockTex = textureLoader.load('../public/assets/texture/Stone.jpg');
+
+    // Grass texture wrapping
+    grassTex.wrapS = grassTex.wrapT = THREE.RepeatWrapping;
+    grassTex.repeat.set(4, 4);
+    grassTex.anisotropy = 8;
+
+    leavesTex.wrapS = leavesTex.wrapT = THREE.RepeatWrapping;
+    leavesTex.repeat.set(2, 2);
+    leavesTex.anisotropy = 8;
+    
+    logTex.wrapS = logTex.wrapT = THREE.RepeatWrapping;
+    logTex.repeat.set(2, 2);
+    logTex.anisotropy = 8;
+
+    rockTex.wrapS = rockTex.wrapT = THREE.RepeatWrapping;
+    rockTex.repeat.set(2, 2);
+    rockTex.anisotropy = 8;
+
     // ===================================
     // Floating Island
     // ===================================
     const islandRadius = 30;
     const islandHeight = 8;
 
-    const islandBaseGeo = new THREE.ConeGeometry(islandRadius, islandHeight * 2, 64);
-    const islandBaseMat = new THREE.MeshStandardMaterial({
-        color: 0x6b4f36,
-        roughness: 0.9,
-        metalness: 0.05
-    });
-    const islandBase = new THREE.Mesh(islandBaseGeo, islandBaseMat);
+    const islandBase = new THREE.Mesh(
+        new THREE.ConeGeometry(islandRadius, islandHeight * 2, 64),
+        new THREE.MeshStandardMaterial({
+            color: 0x6b4f36,
+            roughness: 0.9,
+            metalness: 0.05
+        })
+    );
     islandBase.rotation.x = Math.PI;
     islandBase.position.y = -islandHeight;
     islandBase.castShadow = true;
     islandBase.receiveShadow = true;
 
-    const grassGeo = new THREE.CircleGeometry(islandRadius * 0.9, 64);
-    const grassMat = new THREE.MeshStandardMaterial({
-        color: 0x3fa63f,
-        roughness: 1.0
-    });
-    const grass = new THREE.Mesh(grassGeo, grassMat);
+    const grass = new THREE.Mesh(
+        new THREE.CircleGeometry(islandRadius * 0.9, 64),
+        new THREE.MeshStandardMaterial({
+            map: grassTex,
+            roughness: 1.0
+        })
+    );
     grass.rotation.x = -Math.PI / 2;
     grass.position.y = 0.1;
     grass.castShadow = true;
@@ -121,16 +149,17 @@ export function createRoom() {
     roofPanel.castShadow = true;
     roofPanel.receiveShadow = true;
 
-    const glassGeo = new THREE.PlaneGeometry(museumWidth * 0.8, museumHeight * 0.8);
-    const glassMat = new THREE.MeshStandardMaterial({
-        color: 0x88ccff,
-        envMap: envMap,
-        metalness: 1.0,
-        roughness: 0.05,
-        transparent: true,
-        opacity: 0.7
-    });
-    const glass = new THREE.Mesh(glassGeo, glassMat);
+    const glass = new THREE.Mesh(
+        new THREE.PlaneGeometry(museumWidth * 0.8, museumHeight * 0.8),
+        new THREE.MeshStandardMaterial({
+            color: 0x88ccff,
+            envMap: envMap,
+            metalness: 1.0,
+            roughness: 0.05,
+            transparent: true,
+            opacity: 0.7
+        })
+    );
     glass.position.set(0, museumHeight / 2, museumDepth / 2 + 0.01);
     glass.castShadow = true;
     glass.receiveShadow = true;
@@ -150,13 +179,15 @@ export function createRoom() {
     // ===================================
     // Decorations
     // ===================================
-    
+    const trunkMat = new THREE.MeshStandardMaterial({ map: logTex });
+    const leafMat = new THREE.MeshStandardMaterial({ map: leavesTex });
+    const logMat = new THREE.MeshStandardMaterial({ map: logTex });
+    const shrubMat = new THREE.MeshStandardMaterial({ map: leavesTex });
+    const rockMat = new THREE.MeshStandardMaterial({ map: rockTex });
+    const smallGrassMat = new THREE.MeshStandardMaterial({ map: grassTex });
+
     // Trees
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5a3a1a });
-    const leafMat = new THREE.MeshStandardMaterial({ color: 0x2e8b57 });
-
     const treeCount = 8;
-
     for (let i = 0; i < treeCount; i++) {
         const treeGroup = new THREE.Group();
         const type = Math.floor(Math.random() * 2);
@@ -239,7 +270,6 @@ export function createRoom() {
     }
 
     // Rocks
-    const rockMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
     for (let i = 0; i < 10; i++) {
         const rock = new THREE.Mesh(
             new THREE.DodecahedronGeometry(0.4 + Math.random() * 0.6),
@@ -256,10 +286,6 @@ export function createRoom() {
         islandGroup.add(rock);
     }
 
-    const logMat = new THREE.MeshStandardMaterial({ color: 0x4b2e1e });
-    const shrubMat = new THREE.MeshStandardMaterial({ color: 0x2f8b4c });
-    const smallGrassMat = new THREE.MeshStandardMaterial({ color: 0x3fa63f });
-
     // Fallen logs
     const logCount = 3;
     for (let i = 0; i < logCount; i++) {
@@ -270,9 +296,9 @@ export function createRoom() {
             logMat
         );
         const angle = Math.random() * Math.PI * 2;
-        const r = islandRadius * 0.5 + Math.random() * 5; // near outskirts
+        const r = islandRadius * 0.5 + Math.random() * 5;
         log.position.set(Math.cos(angle) * r, 0.1, Math.sin(angle) * r);
-        log.rotation.z = Math.random() * Math.PI; // lying on ground
+        log.rotation.z = Math.random() * Math.PI;
         log.rotation.x = Math.random() * Math.PI * 0.3;
         log.castShadow = true;
         log.receiveShadow = true;
@@ -328,7 +354,7 @@ export function createRoom() {
     });
     const water = new THREE.Mesh(waterGeo, waterMat);
     water.rotation.x = -Math.PI / 2;
-    water.position.y = -islandHeight * 0.01; // slightly below the island cone tip
+    water.position.y = -islandHeight * 0.01;
     water.receiveShadow = true;
     scene.add(water);
 
