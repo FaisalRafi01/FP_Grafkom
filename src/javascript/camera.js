@@ -3,17 +3,16 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.m
 export function createFPSCamera(domElement = document.body) {
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-    // Yaw (left/right) and Pitch (up/down) objects
+    // Yaw (left/right) dan Pitch (up/down) objects
     const yawObject = new THREE.Object3D();
     const pitchObject = new THREE.Object3D();
     yawObject.add(pitchObject);
     pitchObject.add(camera);
 
-    //PLAYER STUFF
+    // PLAYER STUFF
     const playerHeight = 3;
     const spawnpoint = new THREE.Vector3(0, 30, 8);
     yawObject.position.copy(spawnpoint); 
-
 
     // Input State
     const keys = {};
@@ -22,7 +21,7 @@ export function createFPSCamera(domElement = document.body) {
 
     // Physics state
     let velocityY = 0;
-    const gravity = -30;   
+    let gravity = -30;   
     const jumpSpeed = 15;     
     let onGround = false;
 
@@ -49,12 +48,9 @@ export function createFPSCamera(domElement = document.body) {
     function update(delta) {
         let speed = 5;
 
-        // Sprint: multiply speed by 3 when Shift is held
-        if (keys['ShiftLeft'] || keys['ShiftRight']) {
-            speed *= 3;
-        }
+        if (keys['ShiftLeft'] || keys['ShiftRight']) speed *= 3;
 
-        // === Movement ===
+        // Movement
         const move = new THREE.Vector3();
         if (keys['KeyW']) move.z -= 1;
         if (keys['KeyS']) move.z += 1;
@@ -70,8 +66,7 @@ export function createFPSCamera(domElement = document.body) {
             yawObject.position.addScaledVector(right, move.x * speed * delta);
         }
 
-        // === Jump & Gravity ===
-        // Ground at y = 0
+        // Jump & Gravity
         if (yawObject.position.y <= playerHeight) {
             yawObject.position.y = playerHeight;
             velocityY = 0;
@@ -95,10 +90,13 @@ export function createFPSCamera(domElement = document.body) {
         document.removeEventListener('mousemove', onMouseMove);
     }
 
+    // 🔹 Expose gravity supaya bisa diubah dari luar
     return {
         camera,
         yawObject,
         update,
-        dispose
+        dispose,
+        get gravity() { return gravity; },
+        set gravity(value) { gravity = value; }
     };
 }

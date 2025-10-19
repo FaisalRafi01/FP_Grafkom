@@ -28,7 +28,8 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
 //===================== FPS Camera =====================
-const { camera, yawObject, gravity, update } = createFPSCamera(renderer.domElement);
+const fpsCamera = createFPSCamera(renderer.domElement); // hanya satu instance
+const { camera, yawObject, update } = fpsCamera;       // akses properti dari instance ini
 scene.add(yawObject);
 
 //===================== Raycaster Setup =====================
@@ -48,7 +49,7 @@ document.addEventListener('click', (event) => {
             startFade(1, () => {
                 const insideData = createInside(world);
                 disposeScene(activeScene);
-
+                fpsCamera.gravity = -18;
                 activeScene = insideData.scene;
                 activeScene.add(yawObject);
                 activeScene.userData.exitDoor = insideData.exitDoor;
@@ -71,7 +72,7 @@ document.addEventListener('click', (event) => {
                 startFade(1, () => {
                     const { scene: outsideSceneObj, pintu: pintuLuar } = createRoom();
                     disposeScene(activeScene);
-
+                    fpsCamera.gravity = -30;
                     activeScene = outsideSceneObj;
                     activeScene.add(yawObject);
                     activeScene.userData.pintu = pintuLuar;
